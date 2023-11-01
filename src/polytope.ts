@@ -118,7 +118,16 @@ class Projector {
             v4.x * m[0] + v4.y * m[1] + v4.z * m[2] + v4.w * m[3],
             v4.x * m[4] + v4.y * m[5] + v4.z * m[6] + v4.w * m[7],
             v4.x * m[8] + v4.y * m[9] + v4.z * m[10] + v4.w * m[11],
-            );
+        );
+    }
+    // v4を射影した後の値をpointbufferのn番目のベクトルに代入する。
+    projecttobuffer(pointbuffer: THREE.BufferAttribute | THREE.InterleavedBufferAttribute, n: number, v4: Vector4) {
+        const m = this.pmatrix.elements;
+        pointbuffer.setXYZ(n,
+            v4.x * m[0] + v4.y * m[1] + v4.z * m[2] + v4.w * m[3],
+            v4.x * m[4] + v4.y * m[5] + v4.z * m[6] + v4.w * m[7],
+            v4.x * m[8] + v4.y * m[9] + v4.z * m[10] + v4.w * m[11],
+        );
     }
     // 胞の法線ベクトルを入れて見えるか否かを返す。
     ifVisible(normal: Vector4): boolean {
@@ -156,7 +165,7 @@ export class Facet {
     makeSolidGeometry() {
         this.geometry = new THREE.BufferGeometry();
         this.triangleVertices = this.vertices;
-        this.geometry.faces = polyhedronFaces(this.faces);
+        this.geometry.setIndex(polyhedronFaces(this.faces));
         this.initGeometryVertices();
         this.projectVertices();
         this.makeMesh();
@@ -191,26 +200,23 @@ export class Facet {
         }
         this.geometry = new THREE.BufferGeometry();
         this.triangleVertices = frameVertices;
-        this.geometry.faces = frameFaces;
+        this.geometry.setIndex(frameFaces);
         this.initGeometryVertices();
         this.makeMesh();
         this.projectVertices();
     }
     // とりあえず３次元頂点を意味のない値で初期化。
     initGeometryVertices() {
-        const vertices3: Vector3[] = new Array(this.triangleVertices.length);
-        for (let i = 0; i < this.triangleVertices.length; i++) {
-            vertices3[i] = new Vector3();
-        }
-        this.geometry.vertices = vertices3;
+        const vertices3 = new Float32Array(this.triangleVertices.length * 3);
+        this.geometry.setAttribute('position', new THREE.BufferAttribute(vertices3, 3));
     }
     // 射影した頂点を作る。
     projectVertices() {
         for (let i = 0; i < this.triangleVertices.length; i++) {
-            this.projector.project(this.geometry.vertices[i], this.triangleVertices[i]);
+            this.projector.projecttobuffer(this.geometry.attributes.position, i, this.triangleVertices[i]);
         }
-        this.geometry.verticesNeedUpdate = true;
-        this.geometry.computeFaceNormals();
+        this.geometry.attributes.position.needsUpdate = true;
+        //this.geometry.computeFaceNormals();
     }
     // 胞が見える方にあるかのチェック
     checkVisibility() {
