@@ -57,21 +57,22 @@ class SubsetChecker {
     }
 }
 
-//多角形をTHREE.Face3に分けてリストにする
-function polygonTriangulation(vertexList: number[]): THREE.Face3[] {
-    const triangleList: THREE.Face3[] = [];
+//多角形を三角形に分けて頂点リストにする
+//[頂点1, 頂点2, 頂点3, 頂点1, 頂点２, 頂点3, ...]みたいなリスト
+function polygonTriangulation(vertexList: number[]): number[] {
+    const triangleList: number[] = [];
     for (var i = 1; i < vertexList.length - 1; i++) {
-        triangleList.push(new THREE.Face3(vertexList[0], vertexList[i], vertexList[i + 1]));
+        triangleList.push(vertexList[0], vertexList[i], vertexList[i + 1]);
     }
     return triangleList;
 }
 
-// 多角形のリストをTHREE.Face3のリストにする
-function polyhedronFaces(faceList: number[][]): THREE.Face3[] {
-    const triangleList: THREE.Face3[] = [];
+// 多角形のリストを三角形に分けて頂点のリストにする
+function polyhedronFaces(faceList: number[][]): number[] {
+    const triangleList: number[] = [];
     for (var face of faceList) {
         if (face.length < 4) {
-            triangleList.push(new THREE.Face3(face[0], face[1], face[2]));
+            triangleList.push(face[0], face[1], face[2]);
         } else {
             Array.prototype.push.apply(triangleList, polygonTriangulation(face));
             //triangleList = triangleList.concat(face);
@@ -148,12 +149,12 @@ export class Facet {
     normal: Vector4;//規格化されている。
     triangleVertices: Vector4[]; //geometryに使うための頂点
     //    face3List: THREE.Face3[];  //geometryに使うためのFace3のリスト
-    geometry: THREE.Geometry; //geometry
+    geometry: THREE.BufferGeometry; //geometry
     mesh: THREE.Mesh;
     projector: Projector;
     // 普通にgeometryを作る。
     makeSolidGeometry() {
-        this.geometry = new THREE.Geometry();
+        this.geometry = new THREE.BufferGeometry();
         this.triangleVertices = this.vertices;
         this.geometry.faces = polyhedronFaces(this.faces);
         this.initGeometryVertices();
@@ -163,7 +164,7 @@ export class Facet {
     // 枠のgeometryを作る。
     makeFrameGeometry(ratio: number = 0.7) {
         const frameVertices = this.vertices.slice();  //配列をコピー
-        const frameFaces: THREE.Face3[] = [];
+        const frameFaces: number[] = [];
         for (let f of this.faces) {
             //面の中心を求める。
             const faceCenter = new Vector4(0, 0, 0, 0);
@@ -184,11 +185,11 @@ export class Facet {
             //フレームの面を作る。
             for (let i = 0; i < f.length; i++) {
                 let i1 = (i + 1) % f.length;
-                frameFaces.push(new THREE.Face3(f[i], f[i1], ff[i1]));
-                frameFaces.push(new THREE.Face3(f[i], ff[i1], ff[i]));
+                frameFaces.push(f[i], f[i1], ff[i1]);
+                frameFaces.push(f[i], ff[i1], ff[i]);
             }
         }
-        this.geometry = new THREE.Geometry();
+        this.geometry = new THREE.BufferGeometry();
         this.triangleVertices = frameVertices;
         this.geometry.faces = frameFaces;
         this.initGeometryVertices();
