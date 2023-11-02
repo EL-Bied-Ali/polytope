@@ -216,7 +216,7 @@ export class Facet {
             this.projector.projecttobuffer(this.geometry.attributes.position, i, this.triangleVertices[i]);
         }
         this.geometry.attributes.position.needsUpdate = true;
-        //this.geometry.computeFaceNormals();
+        this.geometry.computeVertexNormals();
     }
     // 胞が見える方にあるかのチェック
     checkVisibility() {
